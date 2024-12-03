@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>神速☆予定登録</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+        }
+
+        .display-container {
+            border-bottom: 2px solid #ccc;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+
+        .display-item {
+            font-size: 16px;
+            word-wrap: break-word;
+        }
+
+        .google-calendar-button {
+            font-size: 18px;
+            padding: 10px 20px;
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .google-calendar-button:hover {
+            background-color: #357ae8;
+        }
+
+        .input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            font-size: 14px;
+            padding: 10px;
+            width: calc(60% - 20px);
+            box-sizing: border-box;
+        }
+
+        button {
+            font-size: 14px;
+            padding: 10px;
+            flex: 1 1 calc(10% - 10px);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .divider {
+            border-bottom: 2px solid #ccc;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 表示部 -->
+    <div class="display-container">
+        <div id="display" class="display-item">開始: </div>
+        <div id="display2" class="display-item">終了: </div>
+        <div id="taskDisplay" class="display-item">要件: </div>
+        <div id="locationDisplay" class="display-item">場所: </div>
+    </div>
+    <!-- 入力部 -->
+    <div class="input-container">
+        <input type="text" id="inputField" maxlength="14" oninput="restrictToNumbers(event); updateDisplay();"
+            pattern="\d*" inputmode="numeric" onkeydown="handleEnter(event)" placeholder="日時を入力">
+        <button onclick="completeInput()">補完</button>
+        <button onclick="clearInput()">クリア</button>
+    </div>
+    <div class="input-container">
+        <input type="text" id="taskField" placeholder="要件を入力してください" oninput="updateTaskDisplay()">
+        <button onclick="cycleTask()">補完</button>
+        <button onclick="clearTask()">クリア</button>
+    </div>
+    <div class="input-container">
+        <input type="text" id="locationField" placeholder="場所を入力してください" oninput="updateLocationDisplay()">
+        <button onclick="cycleLocation()">補完</button>
+        <button onclick="clearLocation()">クリア</button>
+    </div>
+    <div class="divider"></div>
+    <!-- Googleカレンダー登録ボタン -->
+    <button class="google-calendar-button" onclick="registerGoogleCalendar()">Googleカレンダーに予定登録</button>
+    <div class="divider"></div>
+    <div class="divider"></div>
+    <div class="divider"></div>
+
+    <!-- 要件リスト入力欄 -->
+    <div class="input-container">
+        <input type="text" id="taskListField" placeholder="要件リストを入力" oninput="saveTaskList()" />
+    </div>
+</body>
+<script>
+    const TASK_LIST_KEY = "taskList";
+
+    const tasks = ["会議", "買い物", "移動", "病院", "歯医者"];
+    const locations = ["自宅", "職場", "あべのハルカス"];
+    let taskIndex = 0;
+    let locationIndex = 0;
+
+    function restrictToNumbers(event) {
+        const inputField = event.target;
+        inputField.value = inputField.value.replace(/\D/g, ''); // 非数字文字を除去
+    }
+
+    function saveTaskList() {
+        const taskListField = document.getElementById("taskListField");
+        localStorage.setItem(TASK_LIST_KEY, taskListField.value); // 入力内容を保存
+    }
+
+    function loadTaskList() {
+        const taskListField = document.getElementById("taskListField");
+        const savedTaskList = localStorage.getItem(TASK_LIST_KEY);
+        if (savedTaskList !== null) {
+            taskListField.value = savedTaskList;
+        } else {
+            taskListField.value = "会議　歯医者　病院"; // 初期値
+        }
+    }
+
+    function cycleTask() {
+        const taskListField = document.getElementById("taskListField");
+        const taskField = document.getElementById("taskField");
+
+        const tasks = taskListField.value.split(/[\s　]+/).filter(task => task.trim() !== ""); // 分割して空白を除去
+        if (tasks.length > 0) {
+            taskIndex = (taskIndex + 1) % tasks.length;
+            taskField.value = tasks[taskIndex];
+            updateTaskDisplay();
+        }
+    }
+
+    function clearTask() {
+        const taskField = document.getElementById("taskField");
+        taskField.value = '';
+        updateTaskDisplay();
+    }
+
+
+
+    function correctDate(year, month, day) {
+        const date = new Date(year, month - 1, day);
+        return {
+            year: date.getFullYear(),
+            month: date.getMonth() + 1,
+            day: date.getDate()
+        };
+    }
+
+    function updateDisplay() {
+        const inputField = document.getElementById('inputField');
+        const display = document.getElementById('display');
+        const display2 = document.getElementById('display2');
+        const input = inputField.value;
+
+        if (input.length === 6) {
+            // 終日の場合
+            const year = `20${input.slice(0, 2)}`;
+            const month = input.slice(2, 4);
+            const day = input.slice(4, 6);
+
+            const correctedDate = correctDate(year, month, day);
+
+            display.textContent = `開始: ${correctedDate.year}年 ${correctedDate.month}/${correctedDate.day} 終日`;
+            display2.textContent = "";
+            display2.classList.add('hidden');
+        } else {
+            // 通常の場合
+            const fullInput = input + getDateTimeSubstring(input.length);
+            const mainInput = fullInput.slice(0, 10);
+            const additionalTime = fullInput.slice(10, 14);
+
+            const correctedDate = getCorrectedDate(mainInput);
+            display.textContent = `開始: ${formatDate(correctedDate)}`;
+
+            const additionalHours = parseInt(additionalTime.slice(0, 2), 10) || 0;
+            const additionalMinutes = parseInt(additionalTime.slice(2, 4), 10) || 0;
+            correctedDate.setHours(correctedDate.getHours() + additionalHours);
+            correctedDate.setMinutes(correctedDate.getMinutes() + additionalMinutes);
+
+            display2.textContent = `終了: ${formatDate(correctedDate)}`;
+            display2.classList.remove('hidden');
+        }
+    }
+
+    function getDateTimeSubstring(startIndex) {
+        const now = new Date();
+        now.setHours(now.getHours() + 1);
+        const year = now.getFullYear().toString().substr(2, 2);
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = '00';
+        const additional = '0100';
+        const currentDateTime = year + month + day + hour + minute + additional;
+        return currentDateTime.substr(startIndex, 14);
+    }
+
+    function getCorrectedDate(digits) {
+        const year = 2000 + parseInt(digits.substr(0, 2), 10);
+        const month = parseInt(digits.substr(2, 2), 10) - 1;
+        const day = parseInt(digits.substr(4, 2), 10);
+        const hour = parseInt(digits.substr(6, 2), 10);
+        const minute = parseInt(digits.substr(8, 2), 10);
+        const date = new Date(year, month, day, hour, minute);
+        return date;
+    }
+
+    function formatDate(date) {
+        const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const weekday = weekdays[date.getDay()];
+        const hour = date.getHours();
+        const minute = date.getMinutes();
+        return `${year}年 ${month}/${day} ${weekday} ${hour}:${minute < 10 ? '0' + minute : minute}`;
+    }
+
+    function completeInput() {
+        const inputField = document.getElementById('inputField');
+        const input = inputField.value;
+        const fullInput = input + getDateTimeSubstring(input.length);
+        inputField.value = fullInput.slice(0, 14);
+        updateDisplay();
+    }
+
+
+    function initializeTaskList() {
+        const taskList = localStorage.getItem(TASK_LIST_STORAGE_KEY) || "会議 歯医者 病院";
+        document.getElementById("taskList").value = taskList;
+
+        // 保存処理
+        document.getElementById("taskList").addEventListener("input", () => {
+            const taskListInput = document.getElementById("taskList").value;
+            localStorage.setItem(TASK_LIST_STORAGE_KEY, taskListInput);
+        });
+    }
+
+    function clearInput() {
+        initializeInput(); // 初期値に戻す
+    }
+
+    function initializeInput() {
+        const now = new Date();
+        const year = now.getFullYear().toString().substr(2, 2);
+        const inputField = document.getElementById('inputField');
+        inputField.value = year;
+        updateDisplay();
+        inputField.focus(); // ページ読み込み時にフォーカスを設定
+    }
+
+    function updateTaskDisplay() {
+        const taskField = document.getElementById('taskField');
+        const taskDisplay = document.getElementById('taskDisplay');
+        taskDisplay.textContent = `要件: ${taskField.value}`;
+    }
+
+    function updateLocationDisplay() {
+        const locationField = document.getElementById('locationField');
+        const locationDisplay = document.getElementById('locationDisplay');
+        locationDisplay.textContent = `場所: ${locationField.value}`;
+    }
+
+    function cycleLocation() {
+        const locationField = document.getElementById('locationField');
+        locationIndex = (locationIndex + 1) % locations.length;
+        locationField.value = locations[locationIndex];
+        updateLocationDisplay();
+    }
+
+    function clearTask() {
+        const taskField = document.getElementById('taskField');
+        taskField.value = '';
+        updateTaskDisplay();
+    }
+
+    function clearLocation() {
+        const locationField = document.getElementById('locationField');
+        locationField.value = '';
+        updateLocationDisplay();
+    }
+
+    function registerGoogleCalendar() {
+        const inputField = document.getElementById('inputField');
+        const input = inputField.value;
+
+        const task = document.getElementById('taskDisplay').textContent.replace('要件: ', '');
+        const location = document.getElementById('locationDisplay').textContent.replace('場所: ', '');
+
+        let url;
+
+        if (input.length === 6) {
+            // 終日予定
+            const year = `20${input.slice(0, 2)}`;
+            const month = parseInt(input.slice(2, 4), 10);
+            const day = parseInt(input.slice(4, 6), 10);
+
+            const correctedDate = correctDate(year, month, day);
+
+            url = `https://www.google.com/calendar/event?action=TEMPLATE&`
+                + `text=${encodeURIComponent(task)}&`
+                + `location=${encodeURIComponent(location)}&`
+                + `details=${encodeURIComponent(task)}&`
+                + `dates=${correctedDate.year}${String(correctedDate.month).padStart(2, '0')}${String(correctedDate.day).padStart(2, '0')}/`
+                + `${correctedDate.year}${String(correctedDate.month).padStart(2, '0')}${String(correctedDate.day + 1).padStart(2, '0')}`;
+        } else {
+            // 通常予定
+            const display = document.getElementById('display').textContent.replace('開始: ', '');
+            const display2 = document.getElementById('display2').textContent.replace('終了: ', '');
+
+            const start = formatToGcalDateTime(display);
+            const end = formatToGcalDateTime(display2);
+
+            url = `https://www.google.com/calendar/event?action=TEMPLATE&`
+                + `text=${encodeURIComponent(task)}&`
+                + `location=${encodeURIComponent(location)}&`
+                // + `details=${encodeURIComponent(task)}&`
+                + `dates=${start}/${end}`;
+        }
+
+        window.open(url, '_blank');
+    }
+
+    function formatToGcalDateTime(dateTimeString) {
+        const parts = dateTimeString.split(/[\s年月日/:]+/);
+        const year = parts[0];
+        const month = parts[1].padStart(2, '0');
+        const day = parts[2].padStart(2, '0');
+        const hour = parts[4].padStart(2, '0');
+        const minute = parts[5].padStart(2, '0');
+        return `${year}${month}${day}T${hour}${minute}00`;
+    }
+
+    function handleEnter(event) {
+        if (event.key === 'Enter') {
+            registerGoogleCalendar();
+        }
+    }
+
+
+    window.onload = function () {
+        initializeInput();
+        loadTaskList();
+    };
+</script>
+
+</html>
