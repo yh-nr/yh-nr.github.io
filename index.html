@@ -70,6 +70,9 @@
 </head>
 
 <body>
+    <div class="divider"></div>
+    <div class="divider"></div>
+    <div class="divider"></div>
     <!-- 表示部 -->
     <div class="display-container">
         <div id="display" class="display-item">開始: </div>
@@ -105,6 +108,11 @@
     <div class="input-container">
         <input type="text" id="taskListField" placeholder="要件リストを入力" oninput="saveTaskList()" />
     </div>
+
+    <!-- 場所リスト入力欄 -->
+    <div class="input-container">
+        <input type="text" id="locationListField" placeholder="場所リストを入力" oninput="saveTaskList()" />
+    </div>
 </body>
 <script>
     const TASK_LIST_KEY = "taskList";
@@ -133,6 +141,22 @@
             taskListField.value = "会議　歯医者　病院"; // 初期値
         }
     }
+
+    function saveLocationList() {
+        const locationListField = document.getElementById("locationListField");
+        localStorage.setItem(LOCATION_LIST_KEY, locationListField.value); // 入力内容を保存
+    }
+
+    function loadLocationList() {
+        const locationListField = document.getElementById("locationListField");
+        const savedLocationList = localStorage.getItem(LOCATION_LIST_KEY);
+        if (savedLocationList !== null) {
+            locationListField.value = savedLocationList;
+        } else {
+            locationListField.value = "会議　歯医者　病院"; // 初期値
+        }
+    }
+
 
     function cycleTask() {
         const taskListField = document.getElementById("taskListField");
@@ -358,6 +382,7 @@
     window.onload = function () {
         initializeInput();
         loadTaskList();
+        loadLocationList();
     };
 </script>
 
