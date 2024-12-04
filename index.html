@@ -73,6 +73,8 @@
     <div class="divider"></div>
     <div class="divider"></div>
     <div class="divider"></div>
+
+
     <!-- 表示部 -->
     <div class="display-container">
         <div id="display" class="display-item">開始: </div>
@@ -80,6 +82,8 @@
         <div id="taskDisplay" class="display-item">要件: </div>
         <div id="locationDisplay" class="display-item">場所: </div>
     </div>
+
+
     <!-- 入力部 -->
     <div class="input-container">
         <input type="text" id="inputField" maxlength="14" oninput="restrictToNumbers(event); updateDisplay();"
@@ -98,35 +102,30 @@
         <button onclick="clearLocation()">クリア</button>
     </div>
     <div class="divider"></div>
+
+
     <!-- Googleカレンダー登録ボタン -->
     <button class="google-calendar-button" onclick="registerGoogleCalendar()">Googleカレンダーに予定登録</button>
     <div class="divider"></div>
     <div class="divider"></div>
     <div class="divider"></div>
 
+
     <!-- 要件リスト入力欄 -->
     <div class="input-container">
         <input type="text" id="taskListField" placeholder="要件リストを入力" oninput="saveTaskList()" />
     </div>
-
     <!-- 場所リスト入力欄 -->
     <div class="input-container">
         <input type="text" id="locationListField" placeholder="場所リストを入力" oninput="saveTaskList()" />
     </div>
+
+
 </body>
 <script>
     const TASK_LIST_KEY = "taskList";
-    const LOCATION_LIST_KEY = "locationList";
-
     const tasks = ["会議", "買い物", "移動", "病院", "歯医者"];
-    const locations = ["自宅", "職場", "あべのハルカス"];
     let taskIndex = 0;
-    let locationIndex = 0;
-
-    function restrictToNumbers(event) {
-        const inputField = event.target;
-        inputField.value = inputField.value.replace(/\D/g, ''); // 非数字文字を除去
-    }
 
     function saveTaskList() {
         const taskListField = document.getElementById("taskListField");
@@ -142,22 +141,6 @@
             taskListField.value = "会議　歯医者　病院"; // 初期値
         }
     }
-
-    function saveLocationList() {
-        const locationListField = document.getElementById("locationListField");
-        localStorage.setItem(LOCATION_LIST_KEY, locationListField.value); // 入力内容を保存
-    }
-
-    function loadLocationList() {
-        const locationListField = document.getElementById("locationListField");
-        const savedLocationList = localStorage.getItem(LOCATION_LIST_KEY);
-        if (savedLocationList !== null) {
-            locationListField.value = savedLocationList;
-        } else {
-            locationListField.value = "自宅　職場　あべのハルカス";
-        }
-    }
-
 
     function cycleTask() {
         const taskListField = document.getElementById("taskListField");
@@ -175,6 +158,85 @@
         const taskField = document.getElementById("taskField");
         taskField.value = '';
         updateTaskDisplay();
+    }
+
+    // function initializeTaskList() {
+    //     const taskList = localStorage.getItem(TASK_LIST_STORAGE_KEY) || "会議 歯医者 病院";
+    //     document.getElementById("taskList").value = taskList;
+
+    //     // 保存処理
+    //     document.getElementById("taskList").addEventListener("input", () => {
+    //         const taskListInput = document.getElementById("taskList").value;
+    //         localStorage.setItem(TASK_LIST_STORAGE_KEY, taskListInput);
+    //     });
+    // }
+
+    function updateTaskDisplay() {
+        const taskField = document.getElementById('taskField');
+        const taskDisplay = document.getElementById('taskDisplay');
+        taskDisplay.textContent = `要件: ${taskField.value}`;
+    }
+
+
+    const LOCATION_LIST_KEY = "locationList";
+    const locations = ["自宅", "職場", "あべのハルカス"];
+    let locationIndex = 0;
+
+    function saveLocationList() {
+        const locationListField = document.getElementById("locationListField");
+        localStorage.setItem(LOCATION_LIST_KEY, locationListField.value); // 入力内容を保存
+    }
+
+    function loadLocationList() {
+        const locationListField = document.getElementById("locationListField");
+        const savedLocationList = localStorage.getItem(LOCATION_LIST_KEY);
+        if (savedLocationList !== null) {
+            locationListField.value = savedLocationList;
+        } else {
+            locationListField.value = "自宅　職場　あべのハルカス";
+        }
+    }
+
+    function cycleLocation() {
+        const locationListField = document.getElementById("locationListField");
+        const locationField = document.getElementById('locationField');
+
+        const locations = locationListField.value.split(/[\s　]+/).filter(location => location.trim() !== ""); // 分割して空白を除去
+        if (locations.length > 0) {
+            locationIndex = (locationIndex + 1) % locations.length;
+            locationField.value = locations[locationIndex];
+            updateLocationDisplay();
+        }
+    }
+
+    function clearLocation() {
+        const locationField = document.getElementById('locationField');
+        locationField.value = '';
+        updateLocationDisplay();
+    }
+
+    // function initializeLocationList() {
+    //     const locationList = localStorage.getItem(LOCATION_LIST_KEY) || "会議 歯医者 病院";
+    //     document.getElementById("locationList").value = locationList;
+
+    //     // 保存処理
+    //     document.getElementById("locationList").addEventListener("input", () => {
+    //         const locationListInput = document.getElementById("locationList").value;
+    //         localStorage.setItem(LOCATION_LIST_STORAGE_KEY, locationListInput);
+    //     });
+    // }
+
+    function updateLocationDisplay() {
+        const locationField = document.getElementById('locationField');
+        const locationDisplay = document.getElementById('locationDisplay');
+        locationDisplay.textContent = `場所: ${locationField.value}`;
+    }
+
+
+
+    function restrictToNumbers(event) {
+        const inputField = event.target;
+        inputField.value = inputField.value.replace(/\D/g, ''); // 非数字文字を除去
     }
 
 
@@ -266,18 +328,6 @@
         updateDisplay();
     }
 
-
-    function initializeTaskList() {
-        const taskList = localStorage.getItem(TASK_LIST_STORAGE_KEY) || "会議 歯医者 病院";
-        document.getElementById("taskList").value = taskList;
-
-        // 保存処理
-        document.getElementById("taskList").addEventListener("input", () => {
-            const taskListInput = document.getElementById("taskList").value;
-            localStorage.setItem(TASK_LIST_STORAGE_KEY, taskListInput);
-        });
-    }
-
     function clearInput() {
         initializeInput(); // 初期値に戻す
     }
@@ -289,43 +339,6 @@
         inputField.value = year;
         updateDisplay();
         inputField.focus(); // ページ読み込み時にフォーカスを設定
-    }
-
-    function updateTaskDisplay() {
-        const taskField = document.getElementById('taskField');
-        const taskDisplay = document.getElementById('taskDisplay');
-        taskDisplay.textContent = `要件: ${taskField.value}`;
-    }
-
-    function updateLocationDisplay() {
-        const locationField = document.getElementById('locationField');
-        const locationDisplay = document.getElementById('locationDisplay');
-        locationDisplay.textContent = `場所: ${locationField.value}`;
-    }
-
-    function cycleLocation() {
-        const locationListField = document.getElementById("locationListField");
-        const locationField = document.getElementById('locationField');
-
-        const locations = locationListField.value.split(/[\s　]+/).filter(location => location.trim() !== ""); // 分割して空白を除去
-        if (locations.length > 0) {
-            locationIndex = (locationIndex + 1) % locations.length;
-            locationField.value = locations[locationIndex];
-            updateLocationDisplay();
-        }
-    }
-
-
-    function clearTask() {
-        const taskField = document.getElementById('taskField');
-        taskField.value = '';
-        updateTaskDisplay();
-    }
-
-    function clearLocation() {
-        const locationField = document.getElementById('locationField');
-        locationField.value = '';
-        updateLocationDisplay();
     }
 
     function registerGoogleCalendar() {
