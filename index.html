@@ -154,7 +154,7 @@
         if (savedLocationList !== null) {
             locationListField.value = savedLocationList;
         } else {
-            locationListField.value = "会議　歯医者　病院"; // 初期値
+            locationListField.value = "自宅", "職場", "あべのハルカス";
         }
     }
 
@@ -304,11 +304,17 @@
     }
 
     function cycleLocation() {
+        const locationListField = document.getElementById("locationListField");
         const locationField = document.getElementById('locationField');
-        locationIndex = (locationIndex + 1) % locations.length;
-        locationField.value = locations[locationIndex];
-        updateLocationDisplay();
+
+        const locations = locationListField.value.split(/[\s　]+/).filter(location => location.trim() !== ""); // 分割して空白を除去
+        if (locations.length > 0) {
+            locationIndex = (locationIndex + 1) % locations.length;
+            locationField.value = locations[locationIndex];
+            updateLocationDisplay();
+        }
     }
+
 
     function clearTask() {
         const taskField = document.getElementById('taskField');
